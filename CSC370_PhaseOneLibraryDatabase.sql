@@ -6,7 +6,7 @@ CREATE TABLE ItemType (
     item_title VARCHAR(500) NOT NULL UNIQUE,
     item_author VARCHAR(255) NOT NULL,
     item_publisher VARCHAR(255) NOT NULL,
-    item_type VARCHAR(50) NOT NULL,
+    item_type ENUM('Book', 'CD', 'Audiobook') NOT NULL,
     item_release_date DATE NULL
 );
 
@@ -20,7 +20,7 @@ CREATE TABLE Item (
     item_id INT PRIMARY KEY, 
     item_type_id INT NOT NULL,
     location_id INT NOT NULL,
-    item_status VARCHAR(50) NOT NULL,
+    item_status ENUM('Available', 'OnLoan', 'OnHold', 'OutOfCirculation') NOT NULL,
 
     FOREIGN KEY (item_type_id) REFERENCES ItemType(item_type_id),
     FOREIGN KEY (location_id) REFERENCES Location(location_id)
@@ -30,7 +30,7 @@ CREATE TABLE User (
     user_id INT AUTO_INCREMENT Primary KEY,
     user_name VARCHAR(255) NOT NULL,
     user_email VARCHAR(255) NOT NULL,
-    user_status VARCHAR(50) NOT NULL
+    user_status ENUM('Active', 'Deleted') NOT NULL
 );
 
 CREATE TABLE LOAN (
@@ -40,7 +40,7 @@ CREATE TABLE LOAN (
     location_id INT NOT NULL,
     checkout_date DATE NOT NULL,
     due_date DATE NOT NULL,
-    loan_status VARCHAR(50) NOT NULL,
+    loan_status ENUM('ReadyForPickup', 'OnLoan', 'Returned') NOT NULL,
 
     FOREIGN KEY (user_id) REFERENCES User(user_id),
     FOREIGN KEY (item_id) REFERENCES Item(item_id),
@@ -56,7 +56,7 @@ CREATE TABLE HOLD (
     queue_number INT NOT NULL,
     hold_created_date DATE NOT NULL,
     hold_expiry_date DATE NOT NULL,
-    hold_status VARCHAR(50) NOT NULL
+    hold_status ENUM('Waiting', 'ReadyForPickup', 'Completed') NOT NULL
 );
 
 CREATE TABLE Genre (
