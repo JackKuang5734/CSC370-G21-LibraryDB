@@ -56,6 +56,11 @@ CREATE TABLE HOLD (
     queue_number INT NOT NULL,
     hold_created_date DATE NOT NULL,
     hold_expiry_date DATE NOT NULL,
+
+    FOREIGN KEY (item_type_id) REFERENCES ItemType(item_type_id),
+    FOREIGN KEY (user_id) REFERENCES User(user_id),
+    FOREIGN KEY (location_id) REFERENCES Location(location_id),
+     
     hold_status ENUM('Waiting', 'ReadyForPickup', 'Completed') NOT NULL
 );
 
