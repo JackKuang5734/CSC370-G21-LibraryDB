@@ -76,5 +76,3 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
 
 ### AI use
 Claude (Anthropic) was used to help update the README to match the schema script and to draft the setup instructions; the team reviewed and tested the output.
-### AI use
-Claude (Anthropic) was used to help update the README to match the schema script and to draft the setup instructions; the team reviewed and tested the output.
