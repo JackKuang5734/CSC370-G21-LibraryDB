@@ -3,7 +3,7 @@ USE csc370;
 CREATE TABLE ItemType (
     item_type_id INT AUTO_INCREMENT PRIMARY KEY,
 
-    item_title VARCHAR(500) NOT NULL UNIQUE,
+    item_title VARCHAR(500) NOT NULL,
     item_author VARCHAR(255) NOT NULL,
     item_publisher VARCHAR(255) NOT NULL,
     item_type ENUM('Book', 'CD', 'Audiobook') NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE User (
     user_status ENUM('Active', 'Deleted') NOT NULL
 );
 
-CREATE TABLE LOAN (
+CREATE TABLE Loan (
     loan_id INT AUTO_INCREMENT PRIMARY KEY,
     item_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE LOAN (
     FOREIGN KEY (location_id) REFERENCES Location(location_id)
 );
 
-CREATE TABLE HOLD (
+CREATE TABLE Hold (
     hold_id INT AUTO_INCREMENT PRIMARY KEY,
     item_type_id INT NOT NULL,
     user_id INT NOT NULL,
