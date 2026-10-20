@@ -31,8 +31,6 @@ The database is designed to support the following requirements:
 ### Relationships
 
 - Each `Item` is a copy of one `ItemType` (`IsType`) and sits at one `Location`
-- A `Loan` links a `User` to an `Item` (and records a `Location`)
-- A `Hold` links a `User` to an `ItemType` at a `Location`
 - `ItemGenre` links each `ItemType` to any number of `Genre` rows, and each `Genre` to any number of item types
 
 ### Functional dependencies
