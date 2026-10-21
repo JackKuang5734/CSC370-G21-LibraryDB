@@ -15,6 +15,10 @@ The database is designed to support the following requirements:
 - Track hold status (waiting, ready for pickup, completed), hold created date, and hold expiry date
 - Track loan status (ready for pickup, on loan, returned), checkout date, due date, and user
 
+### ERD
+
+<img width="1943" height="1483" alt="image" src="https://github.com/user-attachments/assets/88245b70-c5b0-4159-a050-ab18792ab8fe" />
+
 ### Entities
 
 | Table | Primary key | Description |
@@ -26,12 +30,18 @@ The database is designed to support the following requirements:
 | `Loan` | `loan_id` | A checkout of one item by one user, with checkout date, due date, and status |
 | `Hold` | `hold_id` | A user's place in the queue for an item type at a location, with queue number, created and expiry dates, and status |
 | `Genre` | `genre_id` | A genre name (unique) |
-| `ItemGenre` | (`item_type_id`, `genre_id`) | Junction table linking item types to genres (many-to-many) |
 
 ### Relationships
 
-- Each `Item` is a copy of one `ItemType` (`IsType`) and sits at one `Location`
-- `ItemGenre` links each `ItemType` to any number of `Genre` rows, and each `Genre` to any number of item types
+- `IsGenre` links Genres to ItemTypes that are that genre. Many-to-many relationship
+- `IsType` links an Item to the ItemType it is a copy of. Many-to-one relationship
+- `AtLocation` links an Item to the Location it belongs to. Many-to-one relationship
+- `HeldBy` links a Hold to the User that made the hold. Many-to-one relationship
+- `HeldAt` links a Hold to the Location the hold was made at. Many-to-one relationship
+- `HoldsItem` links a Hold to the ItemType it is for. Many-to-one relationship
+- `LoanedBy` links a Loan to the User that made the hold. Many-to-one relationship
+- `LoanedAt` links a Loan to the Location the loan was made at. Many-to-one relationship
+- `LoansItem` links a Loan to the Item it is for. Many-to-one relationship
 
 ### Functional dependencies
 
