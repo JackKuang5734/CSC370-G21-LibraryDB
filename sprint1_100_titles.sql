@@ -102,9 +102,9 @@ START TRANSACTION;
 
 -- Location: 3 rows
 INSERT INTO `Location` (`location_id`, `location_name`, `address`) VALUES
-  (1, 'Ballard Branch (bal)', NULL),
-  (2, 'Central Library (cen)', NULL),
-  (3, 'Douglass-Truth Branch (dth)', NULL);
+  (1, 'Ballard Branch (bal)', 'Address unavailable'),
+  (2, 'Central Library (cen)', 'Address unavailable'),
+  (3, 'Douglass-Truth Branch (dth)', 'Address unavailable');
 
 -- ItemType: 100 rows
 INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publisher`, `item_type`, `item_release_date`) VALUES
