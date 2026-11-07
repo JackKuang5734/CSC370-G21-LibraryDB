@@ -50,11 +50,17 @@ class Model(QWidget):
         sql_result = self.sql.get_genre(self.display_id)
         self.main_view.display_data(sql_result=sql_result)
 
+    def view_location_items(self):
+        sql_result = self.sql.get_items_from_location(2)
+        self.main_view.display_data(sql_result=sql_result)
+
     # Close the sql connection when the window is closed
     def closeEvent(self, event):
         print("Closing...")
         self.sql.close()
         event.accept()
+
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])

@@ -3,6 +3,19 @@ from mysql.connector import Error
 
 class SQLExecutor():
 
+    LOCATION_ITEM_QUERY = """
+SELECT
+    it.item_title,
+    it.item_author,
+    it.item_type,
+    CONCAT(SUM(CASE WHEN i.item_status = 'Available' THEN 1 ELSE 0 END), '/', COUNT(*))
+FROM Item i
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+WHERE i.location_id = {location_id}
+GROUP BY i.item_type_id
+"""
+
     HOLD_QUERY = """
 SELECT
     u.user_name,
@@ -129,6 +142,11 @@ ON i.location_id = l.location_id
     def get_items(self):
         header = ("Item Title", "Type", "Location", "Status")
         rows = self.query(SQLExecutor.ITEM_QUERY)
+        return SQLResult(header, rows)
+    
+    def get_items_from_location(self, location_id):
+        header = ("Title", "Author", "Type", "Copies Available")
+        rows = self.query(SQLExecutor.LOCATION_ITEM_QUERY.replace("{location_id}", str(location_id)))
         return SQLResult(header, rows)
 
     def get_item_types(self):
