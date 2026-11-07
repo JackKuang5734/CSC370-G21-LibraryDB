@@ -1,6 +1,6 @@
 # CSC 370 Group 21 - Library Database
 
-A MySQL-backed information system for running a library. It stores books, CDs, and audiobooks, tracks multiple copies across locations, and manages user loans and holds (including hold queues).
+A MySQL-backed information system for running a library. It stores books, CDs, audiobooks, ebooks, e-audiobooks, video games, and DVDs, tracks multiple copies across locations, and manages user loans and holds (including hold queues).
 
 Built for CSC 370, Fall 2026. Team: Carmen Edora, Elliot Fox, Erica Ngo, Jack Kuang.
 
@@ -12,12 +12,13 @@ The database is designed to support the following requirements:
 - Store multiple physical or digital copies of the same title at different locations
 - Keep current and historical loans and holds on each user account
 - Keep holds in a queue per item type and location, with queue numbers
-- Track hold status (waiting, ready for pickup, completed), hold created date, and hold expiry date
-- Track loan status (ready for pickup, on loan, returned), checkout date, due date, and user
+- Track hold status (waiting, ready for pickup, in transit, completed), hold created date, and hold expiry date
+- Track loan status (ready for pickup, on loan, returned, overdue, lost), checkout date, due date, and user
+- Group item types into collections, such as a book series, with an optional position in the collection
 
 ### ERD
 
-<img width="1943" height="1483" alt="image" src="https://github.com/user-attachments/assets/88245b70-c5b0-4159-a050-ab18792ab8fe" />
+<img width="928" height="662" alt="ERD" src="https://github.com/user-attachments/assets/d9b489ef-02b6-489d-a0a6-c0e02648c79c" />
 
 ### Entities
 
@@ -30,6 +31,8 @@ The database is designed to support the following requirements:
 | `Loan` | `loan_id` | A checkout of one item by one user, with checkout date, due date, and status |
 | `Hold` | `hold_id` | A user's place in the queue for an item type at a location, with queue number, created and expiry dates, and status |
 | `Genre` | `genre_id` | A genre name (unique) |
+| `ItemCollection` | `collection_id` | A named group of item types, such as a book series: name and description |
+| `ItemTypeCollection` | `item_type_id`, `collection_id` | Links an ItemType to a collection, with an optional `series_position` |
 
 ### Relationships
 
@@ -42,6 +45,7 @@ The database is designed to support the following requirements:
 - `LoanedBy` links a Loan to the User that made the hold. Many-to-one relationship
 - `LoanedAt` links a Loan to the Location the loan was made at. Many-to-one relationship
 - `LoansItem` links a Loan to the Item it is for. Many-to-one relationship
+- `InCollection` links ItemTypes to the ItemCollections they belong to. Many-to-many relationship
 
 ### Functional dependencies
 
@@ -55,9 +59,12 @@ location_id  -> location_name, address
 item_id      -> item_type_id, location_id, item_status
 item_type_id -> item_title, item_author, item_publisher, item_type, item_release_date
 genre_id     -> genre_name
+collection_id -> collection_name, collection_description
+item_type_id, collection_id -> series_position
+collection_id, series_position -> item_type_id
 ```
-
 ItemGenre has a composite key and no other attributes, so it has no non-trivial dependencies.
+ItemTypeCollection has a composite key, and series_position depends on the whole key.
 
 ## Setup
 
@@ -73,14 +80,29 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
 ```
    sudo mysql -e "CREATE DATABASE IF NOT EXISTS csc370;"
 ```
-4. Run the schema script:
+
+4. Run the schema script, then load the Sprint 1 data and the Phase 2 migration:
 ```
-   sudo mysql csc370 < CSC370_PhaseOneLibraryDatabase.sql
+   sudo mysql csc370 < Sprint0_cr_tables.sql
+   sudo mysql csc370 < Sprint1_ins_data.sql
+   sudo mysql csc370 < Sprint2_upd_tables.sql
+   sudo mysql csc370 < Sprint2_ins_data.sql
 ```
+
 5. Check that it worked. You should see 8 tables (Genre, Item, ItemGenre, ItemType, Location, User, Loan, Hold):
 ```
    sudo mysql csc370 -e "SHOW TABLES;"
 ```
 
 ### AI use
-Claude (Anthropic) was used to help update the README to match the schema script and to draft the setup instructions; the team reviewed and tested the output.
+Claude (Anthropic) was used to help update the README to match the schema script and to draft the setup instructions.
+
+**Sprint 1**
+- AI was used to create a Python project to parse the JSON data.
+- AI was used to create a SQL script to handle stress test conditions.
+- AI was used to produce a script based on the FD/normalization tables.
+
+**Phase 2**
+- AI was used to help draft the README updates and the setup and testing instructions.
+
+The team reviewed and tested all AI-generated output.
