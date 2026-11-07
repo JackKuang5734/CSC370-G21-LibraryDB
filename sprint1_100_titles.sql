@@ -1,104 +1,6 @@
 -- Auto-generated CSC 370 Group 21 MySQL import.
--- Start with a new/empty schema. Existing row IDs will conflict on repeated imports.
--- WARNING: recovery mode was enabled; this is potentially partial data.
--- WARNING: User, Loan and Hold records here are SYNTHETIC DEMO DATA.
-SET NAMES utf8mb4;
-SET SESSION sql_mode = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', @@SESSION.sql_mode, ','), ',NO_BACKSLASH_ESCAPES,', ','));
 
--- CSC 370 Group 21, library database: physical schema from slide 6.
--- MySQL 8.0.16+ required for enforced CHECK constraints.
--- This file is non-destructive; it never drops or clears existing tables.
-CREATE DATABASE IF NOT EXISTS `csc370`
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `csc370`;
-
-CREATE TABLE IF NOT EXISTS `User` (
-  `user_id` INT PRIMARY KEY,
-  `user_name` VARCHAR(255) NOT NULL,
-  `user_email` VARCHAR(255),
-  `user_status` ENUM('Active', 'Deleted') NOT NULL DEFAULT 'Active'
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Location` (
-  `location_id` INT PRIMARY KEY,
-  `location_name` VARCHAR(255) NOT NULL,
-  `address` VARCHAR(255)
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `ItemType` (
-  `item_type_id` INT PRIMARY KEY,
-  `item_title` VARCHAR(500) COLLATE utf8mb4_bin NOT NULL UNIQUE,
-  `item_author` VARCHAR(255),
-  `item_publisher` VARCHAR(255),
-  `item_type` ENUM('Book','CD','Audiobook') NOT NULL,
-  `item_release_date` DATE NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Genre` (
-  `genre_id` INT PRIMARY KEY,
-  `genre_name` VARCHAR(100) COLLATE utf8mb4_bin NOT NULL UNIQUE
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Item` (
-  `item_id` INT PRIMARY KEY,
-  `item_type_id` INT NOT NULL,
-  `location_id` INT NOT NULL,
-  `item_status` ENUM('Available', 'OnLoan', 'OnHold', 'OutOfCirculation') NOT NULL DEFAULT 'Available',
-  CONSTRAINT `fk_item_type` FOREIGN KEY (`item_type_id`)
-    REFERENCES `ItemType` (`item_type_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_item_location` FOREIGN KEY (`location_id`)
-    REFERENCES `Location` (`location_id`) ON DELETE RESTRICT,
-  INDEX `idx_item_type_location` (`item_type_id`, `location_id`)
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `ItemGenre` (
-  `item_type_id` INT NOT NULL,
-  `genre_id` INT NOT NULL,
-  PRIMARY KEY (`item_type_id`, `genre_id`),
-  CONSTRAINT `fk_itemgenre_type` FOREIGN KEY (`item_type_id`)
-    REFERENCES `ItemType` (`item_type_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_itemgenre_genre` FOREIGN KEY (`genre_id`)
-    REFERENCES `Genre` (`genre_id`) ON DELETE RESTRICT
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Loan` (
-  `loan_id` INT PRIMARY KEY,
-  `item_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `location_id` INT NOT NULL,
-  `checkout_date` DATE NOT NULL,
-  `due_date` DATE NOT NULL,
-  `loan_status` ENUM('ReadyForPickup','OnLoan','Returned') NOT NULL,
-  CONSTRAINT `fk_loan_item` FOREIGN KEY (`item_id`)
-    REFERENCES `Item` (`item_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_loan_user` FOREIGN KEY (`user_id`)
-    REFERENCES `User` (`user_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_loan_location` FOREIGN KEY (`location_id`)
-    REFERENCES `Location` (`location_id`) ON DELETE RESTRICT,
-  CONSTRAINT `chk_loan_dates` CHECK (`due_date` >= `checkout_date`)
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `Hold` (
-  `hold_id` INT PRIMARY KEY,
-  `item_type_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `location_id` INT NOT NULL,
-  `queue_number` INT NOT NULL,
-  `hold_created_date` DATE NOT NULL,
-  `hold_expiry_date` DATE NOT NULL,
-  `hold_status` ENUM('Waiting','ReadyForPickup','Completed') NOT NULL,
-  CONSTRAINT `fk_hold_type` FOREIGN KEY (`item_type_id`)
-    REFERENCES `ItemType` (`item_type_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_hold_user` FOREIGN KEY (`user_id`)
-    REFERENCES `User` (`user_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_hold_location` FOREIGN KEY (`location_id`)
-    REFERENCES `Location` (`location_id`) ON DELETE RESTRICT,
-  CONSTRAINT `uq_hold_queue` UNIQUE (`item_type_id`,`location_id`,`queue_number`),
-  CONSTRAINT `chk_hold_queue` CHECK (`queue_number` > 0),
-  CONSTRAINT `chk_hold_dates` CHECK (`hold_expiry_date` >= `hold_created_date`)
-) ENGINE=InnoDB;
-
-START TRANSACTION;
 
 -- Location: 3 rows
 INSERT INTO `Location` (`location_id`, `location_name`, `address`) VALUES
@@ -122,7 +24,7 @@ INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publi
   (12, 'Chippendale furniture, circa 1745-1765; the work of Thomas Chippendale and his contemporaries in the rococo taste; Vile, Cobb, Langlois, Channon, Hallett, Ince and Mayhew, Lock, Johnson, and others.', 'Coleridge, Anthony.', 'C. N. Potter; distributed by Crown Publishers,', 'Book', '1968-01-01'),
   (13, 'Portraits by Karsh.', 'Karsh, Yousuf, 1908-2002', '[Printed by the Meriden Gravure Co.],', 'Book', '1968-01-01'),
   (14, 'Rembrandt paintings. / [Translated by Heinz Norden. Edited by Gary Schwartz.', 'Gerson, Horst, 1907-1978', 'Reynal,', 'Book', '1968-01-01'),
-  (15, 'The Dolmen Press Yeats centenary papers MCMLXV / edited by Liam Miller with a pref. by Jon Stallworthy.', NULL, 'Dolmen Press; Dufour Editions,', 'Book', '1968-01-01'),
+  (15, 'The Dolmen Press Yeats centenary papers MCMLXV / edited by Liam Miller with a pref. by Jon Stallworthy.', 'Unknown Author', 'Dolmen Press; Dufour Editions,', 'Book', '1968-01-01'),
   (16, '3 plays. / Translated by Paul Roche.', 'Plautus, Titus Maccius', 'New American Library,', 'Book', '1968-01-01'),
   (17, 'Art and revolution; Ernst Neizvestny and the role of the artist in the U.S.S.R.', 'Berger, John', 'Pantheon Books,', 'Book', '1969-01-01'),
   (18, 'Victorian stencils for design and decoration. / Selected by Edmund V. Gillon, Jr.', 'Gillon, Edmund Vincent', 'Dover Publications,', 'Book', '1968-01-01'),
@@ -131,7 +33,7 @@ INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publi
   (21, 'German tanks & armored vehicles, 1914-1945 B. T. White.', 'White, B. T. (Brian Terence), 1927-', 'Arco Pub. Co.,', 'Book', '1968-01-01'),
   (22, 'The Hindu world; an encyclopedic survey of Hinduism / Benjamin Walker.', 'Walker, Benjamin, 1913-', 'Praeger,', 'Book', '1968-01-01'),
   (23, 'Alexander the Great; power as destiny / Peter Bamm. Translated from the German by J. Maxwell Brownjohn.', 'Bamm, Peter, 1897-1975', 'McGraw-Hill,', 'Book', '1968-01-01'),
-  (24, 'McGraw-Hill dictionary of art. / Edited by Bernard S. Myers. Assistant editor: Shirley D. Myers.', NULL, 'McGraw-Hill,', 'Book', '1969-01-01'),
+  (24, 'McGraw-Hill dictionary of art. / Edited by Bernard S. Myers. Assistant editor: Shirley D. Myers.', 'Unknown Author', 'McGraw-Hill,', 'Book', '1969-01-01'),
   (25, 'Stained glass in French cathedrals. / [Translated from the German by Francisca Garvie]', 'Witzleben, Elisabeth von, 1905-', 'Reynal,', 'Book', '1968-01-01'),
   (26, 'Magruder''s Maryland colonial abstracts; wills, accounts, and inventories, 1772-1777 / compiled by James M. Magruder, Jr.', 'Magruder, James Mosby, 1899-', 'Genealogical Pub. Co.,', 'Book', '1968-01-01'),
   (27, 'Royal treasures / edited by Erich Steingräber. Translated by Stefan de Haan. Photos. by Claus and Liselotte Hansmann.', 'Steingräber, Erich', 'Macmillan,', 'Book', '1968-01-01'),
@@ -142,7 +44,7 @@ INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publi
   (32, 'The history & folklore of American country tinware, 1700-1900.', 'Coffin, Margaret', 'T. Nelson,', 'Book', '1968-01-01'),
   (33, 'The personal exemptions in the income tax / Lawrence H. Seltzer.', 'Seltzer, Lawrence H. (Lawrence Howard), 1897-1993', 'National Bureau of Economic Research; distributed by Columbia University Press,', 'Book', '1968-01-01'),
   (34, 'Sulphides; the art of cameo incrustation.', 'Jokelson, Paul, 1905-2002', 'Nelson,', 'Book', '1968-01-01'),
-  (35, 'Records and documents of the Holy See relating to the Second World War. / Original ed. edited by Pierre Blet, Angelo Martini, and Burkhart Schneider. Translated from the original French, Italian, German, and Latin.', NULL, '[Corpus Books],', 'Book', '1968-01-01'),
+  (35, 'Records and documents of the Holy See relating to the Second World War. / Original ed. edited by Pierre Blet, Angelo Martini, and Burkhart Schneider. Translated from the original French, Italian, German, and Latin.', 'Unknown Author', '[Corpus Books],', 'Book', '1968-01-01'),
   (36, 'Hiroshige famous views / by Muneshige Narazaki ; English adaptation by Richard L. Gage.', 'Andō, Hiroshige, 1797-1858', 'Kodansha International,', 'Book', '1981-01-01'),
   (37, 'The age of expansion; Europe and the world, 1559-1660. / Texts by Henry Kamen [and others]. Edited by Hugh Trevor-Roper.', 'Trevor-Roper, H. R. (Hugh Redwald), 1914-2003', 'McGraw-Hill,', 'Book', '1968-01-01'),
   (38, 'Old tavern signs: an excursion in the history of hospitality / by Fritz Endell. With illus. by the author. [Boston] Houghton Mifflin, 1916.', 'Endell, Fritz August Gottfried, 1873-1955', 'Singing Tree Press,', 'Book', '1968-01-01'),
@@ -150,7 +52,7 @@ INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publi
   (40, 'Baptismal names ... / by Joseph L. Weidenhan.', 'Weidenhan, Joseph L.', 'Kenmore Productions; Gale Research Co.,', 'Book', '1968-01-01'),
   (41, 'Diagnostic electrocardiography / Michael C. Ritota.', 'Ritota, Michael C., 1914-', 'Lippincott,', 'Book', '1969-01-01'),
   (42, 'Acquisitions of the 1930''s and 1940''s; a selection of paintings, watercolors, and drawings in tribute to Baroness Hilla von Rebay, 1890-1967.', 'Solomon R. Guggenheim Museum', '[publisher not identified],', 'Book', '1968-01-01'),
-  (43, 'The McGraw-Hill encyclopedia of space. / Foreword by M. Scott Carpenter.', NULL, 'McGraw-Hill,', 'Book', '1968-01-01'),
+  (43, 'The McGraw-Hill encyclopedia of space. / Foreword by M. Scott Carpenter.', 'Unknown Author', 'McGraw-Hill,', 'Book', '1968-01-01'),
   (44, 'Paul Feeley, 1910-1966. A memorial exhibition: the Solomon R. Guggenheim Museum, New York.', 'Feeley, Paul, 1910-1966', '[Solomon R. Guggenheim Foundation],', 'Book', '1968-01-01'),
   (45, 'A family history: Wright-Lewis-Moore and connected families; early settlers, Greene County, Georgia.', 'Boyd, John Wright, 1905-', '[publisher not identified],', 'Book', '1968-01-01'),
   (46, 'The Northern Pacific, main street of the Northwest; a pictorial history / by Charles R. Wood.', 'Wood, Charles R. (Charles Raymond), 1924-', 'Superior Pub. Co.,', 'Book', '1968-01-01'),
@@ -192,7 +94,7 @@ INSERT INTO `ItemType` (`item_type_id`, `item_title`, `item_author`, `item_publi
   (82, 'The chronological history of the Negro in America / by Peter M. Bergman, assisted by a staff of compilers under the direction of Mort N. Bergman.', 'Bergman, Peter M.', 'Harper & Row,', 'Book', '1969-01-01'),
   (83, 'Those remarkable Cunards: Emerald and Nancy / Daphne Fielding.', 'Fielding, Daphne, 1904-1997', 'Atheneum,', 'Book', '1968-01-01'),
   (84, 'A passion for Sicilians: the world around Danilo Dolci / Jerre Mangione.', 'Mangione, Jerre, 1909-1998', 'W. Morrow,', 'Book', '1968-01-01'),
-  (85, 'One hundred years of anthropology. / Edited with an introd. by J. O. Brew.', NULL, 'Harvard University Press,', 'Book', '1968-01-01'),
+  (85, 'One hundred years of anthropology. / Edited with an introd. by J. O. Brew.', 'Unknown Author', 'Harvard University Press,', 'Book', '1968-01-01'),
   (86, 'Ernst Ludwig Kirchner / Donald E. Gordon.', 'Gordon, Donald E.', 'Harvard University Press,', 'Book', '1968-01-01'),
   (87, 'The early poetry of Ezra Pound / by Thomas H. Jackson.', 'Jackson, Thomas H.', 'Harvard University Press,', 'Book', '1968-01-01'),
   (88, 'Roman laughter; the comedy of Plautus / Erich Segal.', 'Segal, Erich, 1937-2010', 'Harvard University Press,', 'Book', '1968-01-01'),
