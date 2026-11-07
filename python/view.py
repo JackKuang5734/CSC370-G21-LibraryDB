@@ -1,24 +1,25 @@
-from pkg_resources import SOURCE_DIST
-from sympy import solve_poly_inequality
-from menus import Menu
-from PyQt6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
-from model import Model
-from sql_executor import SQLResult
+import re
+from menu import Menu
+from PyQt6.QtWidgets import QScrollArea, QStackedWidget, QVBoxLayout, QWidget
+from screen import ItemInfomationScreen
+from sql_executor import SQLExecutor, SQLResult
 from table import Table
 
 
 class MainView(QWidget):
-    def __init__(self, model : Model):
+
+
+    GENERAL_DATA = 0
+    ITEM_DETAILS = 1
+
+    def __init__(self, sql : SQLExecutor):
         super().__init__()
 
-        self.model : Model = model
+        self.sql : SQLExecutor = sql
 
         self.setLayout(QVBoxLayout())
 
-        self.table : Table = Table()
-
         self.main_menu = Menu()
-
         self.main_menu.add_button("Users", self.display_users)
         self.main_menu.add_button("Holds", self.display_holds)
         self.main_menu.add_button("Loans", self.display_loans)
@@ -28,46 +29,60 @@ class MainView(QWidget):
         self.main_menu.add_button("Locations", self.display_locations)
         self.main_menu.add_button("Genres", self.display_genres)
         
+        self.stacked_widget = QStackedWidget()
+
+        self.table : Table = Table()
+        self.item_type_screen = ItemInfomationScreen(self)
+
         self.layout().addWidget(self.main_menu)
-        self.layout().addWidget(self.table)
+        self.layout().addWidget(self.stacked_widget)
+
+        self.stacked_widget.insertWidget(self.__class__.GENERAL_DATA, self.table)
+        self.stacked_widget.insertWidget(self.__class__.ITEM_DETAILS, self.item_type_screen)
+
+        self.stacked_widget.setCurrentIndex(self.__class__.GENERAL_DATA)
 
     
     def display_users(self):
-        self.display_data(sql_result=self.model.get_users())
+        self.display_general_data(self.sql.get_users())
 
     def display_holds(self):
-        self.display_data(sql_result=self.model.get_holds())
+        self.display_general_data(self.sql.get_holds())
     
     def display_loans(self):
-        self.display_data(sql_result=self.model.get_loans())
+        self.display_general_data(self.sql.get_loans())
     
     def display_items(self):
-        self.display_data(sql_result=self.model.get_items(location_id=None))
+        self.display_general_data(self.sql.get_items())
     
     def display_location_items(self):
-        self.display_data(sql_result=self.model.get_items(location_id=2))
+        result = self.sql.get_items_from_location(2)
+        result.link_columns((self.display_item_type,))
+        self.display_general_data(result)
     
     def display_item_types(self):
-        self.display_data(sql_result=self.model.get_item_types())
+        self.display_general_data(self.sql.get_item_types())
     
     def display_locations(self):
-        self.display_data(sql_result=self.model.get_locations())
+        self.display_general_data(self.sql.get_locations())
 
     def display_genres(self):
-        self.display_data(sql_result=self.model.get_genres())
+        self.display_general_data(self.sql.get_genres())
     
-    def display_data(self, header=None, rows=None, sql_result : SQLResult|None = None):
+    def display_item_type(self, id):
+        self.item_type_screen.display_item(self.sql.get_item_type_info(str(id)))
+        self.stacked_widget.setCurrentIndex(self.__class__.ITEM_DETAILS)
+
+    def display_general_data(self, sql_result : SQLResult|None = None):
         if sql_result is not None:
-            header = sql_result.header
-            rows = sql_result.rows
-        if header is not None and rows is not None:
-            self.table.display(header, rows)
+            self.table.display(sql_result)
         else:
             self.table.clear()
+        self.stacked_widget.setCurrentIndex(self.__class__.GENERAL_DATA)
     
 
         # Close the sql connection when the window is closed
     def closeEvent(self, event):
         print("Closing...")
-        self.model.close()
+        self.sql.close()
         event.accept()

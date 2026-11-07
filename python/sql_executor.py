@@ -1,11 +1,18 @@
 import mysql.connector
 from mysql.connector import Error
 
+from data_objects import ItemType
+
 
 class SQLResult():
-    def __init__(self, header : tuple, rows : list[tuple]):
+    def __init__(self, header : tuple, rows : list[tuple], id_rows : list[tuple]|None=None):
         self.header : tuple = header
         self.rows : list[tuple] = rows
+        self.links : tuple|None = ()
+        self.id_rows : list[tuple]|None = id_rows
+    
+    def link_columns(self, links : tuple):
+        self.links = links
 
 class SQLExecutor():
 
@@ -15,6 +22,19 @@ SELECT
     it.item_author,
     it.item_type,
     CONCAT(SUM(CASE WHEN i.item_status = 'Available' THEN 1 ELSE 0 END), '/', COUNT(*))
+FROM Item i
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+WHERE i.location_id = {location_id}
+GROUP BY i.item_type_id
+"""
+
+    LOCATION_ITEM_ID_QUERY = """
+SELECT
+    it.item_type_id,
+    NULL,
+    NULL,
+    NULL
 FROM Item i
 JOIN ItemType it
 ON (i.item_type_id = it.item_type_id)
@@ -118,31 +138,19 @@ ON i.location_id = l.location_id
         records = self.cursor.fetchall()
         return records
 
-    def get_users(self, show_id) -> SQLResult:
-        if show_id:
-            header = ("user_id", "user_name", "user_email", "user_status")
-            rows = self.query("SELECT user_id, user_name, user_email, user_status FROM User")
-        else:
-            header = ("Username", "User Email", "User Status")
-            rows = self.query("SELECT user_name, user_email, user_status FROM User")
+    def get_users(self) -> SQLResult:
+        header = ("Username", "User Email", "User Status")
+        rows = self.query("SELECT user_name, user_email, user_status FROM User")
         return SQLResult(header, rows)
 
-    def get_holds(self, show_id) -> SQLResult:
-        if show_id:
-            header = ("hold_id", "item_type_id", "user_id", "location_id", "queue_number", "hold_created_date", "hold_expiry_date", "hold_status")
-            rows = self.query("SELECT hold_id, item_type_id, user_id, location_id, queue_number, hold_created_date, hold_expiry_date, hold_status FROM Hold")
-        else:
-            header = ("User", "Title", "Location", "#", "Status", "Created", "Expires")
-            rows = self.query(SQLExecutor.HOLD_QUERY)
+    def get_holds(self) -> SQLResult:
+        header = ("User", "Title", "Location", "#", "Status", "Created", "Expires")
+        rows = self.query(SQLExecutor.HOLD_QUERY)
         return SQLResult(header, rows)
 
-    def get_loans(self, show_id) -> SQLResult:
-        if show_id:
-            header = ("loan_id", "item_id", "user_id", "location_id", "checkout_date", "due_date", "loan_status")
-            rows = self.query("SELECT loan_id, item_id, user_id, location_id, checkout_date, due_date, loan_status FROM Loan")
-        else:
-            header = ("User", "Title", "Location", "Checkout Date", "Due Date", "Status")
-            rows = self.query(SQLExecutor.LOAN_QUERY)
+    def get_loans(self) -> SQLResult:
+        header = ("User", "Title", "Location", "Checkout Date", "Due Date", "Status")
+        rows = self.query(SQLExecutor.LOAN_QUERY)
         return SQLResult(header, rows)
 
     def get_items(self) -> SQLResult:
@@ -153,27 +161,34 @@ ON i.location_id = l.location_id
     def get_items_from_location(self, location_id) -> SQLResult:
         header = ("Title", "Author", "Type", "Copies Available")
         rows = self.query(SQLExecutor.LOCATION_ITEM_QUERY.replace("{location_id}", str(location_id)))
-        return SQLResult(header, rows)
+        id_rows = self.query(SQLExecutor.LOCATION_ITEM_ID_QUERY.replace("{location_id}", str(location_id)))
+        return SQLResult(header, rows, id_rows)
 
     def get_item_types(self) -> SQLResult:
         header = ("item_title", "item_author", "item_release_date", "item_type")
         rows = self.query("SELECT item_title, item_author, item_release_date, item_type FROM ItemType")
         return SQLResult(header, rows)
 
-    def get_locations(self, show_id) -> SQLResult:
-        if show_id:
-            header = ("location_id", "location_name", "address")
-            rows = self.query("SELECT location_id, location_name, address FROM Location")
-        else:
-            header = ("Location", "Address")
-            rows = self.query("SELECT location_name, address FROM Location")
+    def get_locations(self) -> SQLResult:
+        header = ("Location", "Address")
+        rows = self.query("SELECT location_name, address FROM Location")
         return SQLResult(header, rows)
 
-    def get_genre(self, show_id) -> SQLResult:
-        if show_id:
-            header = ("genre_id", "genre_name")
-            rows = self.query("SELECT genre_id, genre_name FROM Genre")
-        else:
-            header = ("Genre",)
-            rows = self.query("SELECT genre_name FROM Genre")
+    def get_genres(self) -> SQLResult:
+        header = ("Genre",)
+        rows = self.query("SELECT genre_name FROM Genre")
         return SQLResult(header, rows)
+
+
+    def get_item_type_info(self, item_type_id) -> ItemType:
+        data = self.query(f"SELECT it.item_title, it.item_author, it.item_publisher, it.item_type, it.item_release_date FROM ItemType it WHERE it.item_type_id = {item_type_id}")[0]
+        genre_data = self.query(f"SELECT g.genre_name FROM Genre g JOIN ItemGenre ig ON (g.genre_id = ig.genre_id) WHERE ig.item_type_id = {item_type_id}")
+
+        return ItemType(
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            [t[0] for t in genre_data]
+        )

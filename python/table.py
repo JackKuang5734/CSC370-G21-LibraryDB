@@ -1,5 +1,19 @@
 from PyQt6 import QtCore, QtWidgets, QtGui
-from PyQt6.QtWidgets import QGridLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QGridLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
+
+from sql_executor import SQLResult
+
+class ClickableLabel(QLabel):
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+
 
 class Table(QWidget):
     def __init__(self):
@@ -19,21 +33,40 @@ class Table(QWidget):
         for i in reversed(range(self.data_widget.layout().count())):
             self.data_widget.layout().itemAt(i).widget().deleteLater()
 
-    def display(self, header_row, content):
+    def display(self, sql_result : SQLResult):
         self.clear()
 
-        for i in range(len(header_row)):
-            label : QLabel = QLabel(str(header_row[i]))
+        for i in range(len(sql_result.header)):
+            label = QLabel(str(sql_result.header[i]))
             label.setMaximumHeight(16)
             self.data_widget.layout().addWidget(label, 0, i)
-
         
-        for row in range(len(content)):
-            for i in range(len(content[row])):
-                label : QLabel = QLabel(str(content[row][i]))
+        for col in range(len(sql_result.header)):
+            link_function : function = None if len(sql_result.links) <= col else sql_result.links[col]
+            for row in range(len(sql_result.rows)):
+                label = ClickableLabel(str(sql_result.rows[row][col]))
                 label.setMaximumHeight(16)
-                self.data_widget.layout().addWidget(label, row + 1, i)
-        
-        self.scroll_area.verticalScrollBar().setValue(0)
-        
+                if link_function is not None and sql_result.id_rows[row][col] is not None:
+                    label.clicked.connect(lambda checked=False, func=link_function, val=sql_result.id_rows[row][col]: func(val))
+                self.data_widget.layout().addWidget(label, row + 1, col)
 
+
+
+    # def display(self, header, rows):
+    #     self.clear()
+
+    #     for i in range(len(header)):
+    #         label : QLabel = QLabel(str(header[i]))
+    #         label.setMaximumHeight(16)
+    #         self.data_widget.layout().addWidget(label, 0, i)
+
+        
+    #     for row in range(len(rows)):
+    #         for i in range(len(rows[row])):
+    #             label : QLabel = QLabel(str(rows[row][i]))
+    #             label.setMaximumHeight(16)
+    #             self.data_widget.layout().addWidget(label, row + 1, i)
+        
+    #     self.scroll_area.verticalScrollBar().setValue(0)
+        
+    
