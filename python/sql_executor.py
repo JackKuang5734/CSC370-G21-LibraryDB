@@ -1,6 +1,12 @@
 import mysql.connector
 from mysql.connector import Error
 
+
+class SQLResult():
+    def __init__(self, header : tuple, rows : list[tuple]):
+        self.header : tuple = header
+        self.rows : list[tuple] = rows
+
 class SQLExecutor():
 
     LOCATION_ITEM_QUERY = """
@@ -112,7 +118,7 @@ ON i.location_id = l.location_id
         records = self.cursor.fetchall()
         return records
 
-    def get_users(self, show_id):
+    def get_users(self, show_id) -> SQLResult:
         if show_id:
             header = ("user_id", "user_name", "user_email", "user_status")
             rows = self.query("SELECT user_id, user_name, user_email, user_status FROM User")
@@ -121,7 +127,7 @@ ON i.location_id = l.location_id
             rows = self.query("SELECT user_name, user_email, user_status FROM User")
         return SQLResult(header, rows)
 
-    def get_holds(self, show_id):
+    def get_holds(self, show_id) -> SQLResult:
         if show_id:
             header = ("hold_id", "item_type_id", "user_id", "location_id", "queue_number", "hold_created_date", "hold_expiry_date", "hold_status")
             rows = self.query("SELECT hold_id, item_type_id, user_id, location_id, queue_number, hold_created_date, hold_expiry_date, hold_status FROM Hold")
@@ -130,7 +136,7 @@ ON i.location_id = l.location_id
             rows = self.query(SQLExecutor.HOLD_QUERY)
         return SQLResult(header, rows)
 
-    def get_loans(self, show_id):
+    def get_loans(self, show_id) -> SQLResult:
         if show_id:
             header = ("loan_id", "item_id", "user_id", "location_id", "checkout_date", "due_date", "loan_status")
             rows = self.query("SELECT loan_id, item_id, user_id, location_id, checkout_date, due_date, loan_status FROM Loan")
@@ -139,22 +145,22 @@ ON i.location_id = l.location_id
             rows = self.query(SQLExecutor.LOAN_QUERY)
         return SQLResult(header, rows)
 
-    def get_items(self):
+    def get_items(self) -> SQLResult:
         header = ("Item Title", "Type", "Location", "Status")
         rows = self.query(SQLExecutor.ITEM_QUERY)
         return SQLResult(header, rows)
     
-    def get_items_from_location(self, location_id):
+    def get_items_from_location(self, location_id) -> SQLResult:
         header = ("Title", "Author", "Type", "Copies Available")
         rows = self.query(SQLExecutor.LOCATION_ITEM_QUERY.replace("{location_id}", str(location_id)))
         return SQLResult(header, rows)
 
-    def get_item_types(self):
+    def get_item_types(self) -> SQLResult:
         header = ("item_title", "item_author", "item_release_date", "item_type")
         rows = self.query("SELECT item_title, item_author, item_release_date, item_type FROM ItemType")
         return SQLResult(header, rows)
 
-    def get_locations(self, show_id):
+    def get_locations(self, show_id) -> SQLResult:
         if show_id:
             header = ("location_id", "location_name", "address")
             rows = self.query("SELECT location_id, location_name, address FROM Location")
@@ -163,7 +169,7 @@ ON i.location_id = l.location_id
             rows = self.query("SELECT location_name, address FROM Location")
         return SQLResult(header, rows)
 
-    def get_genre(self, show_id):
+    def get_genre(self, show_id) -> SQLResult:
         if show_id:
             header = ("genre_id", "genre_name")
             rows = self.query("SELECT genre_id, genre_name FROM Genre")
@@ -171,9 +177,3 @@ ON i.location_id = l.location_id
             header = ("Genre",)
             rows = self.query("SELECT genre_name FROM Genre")
         return SQLResult(header, rows)
-
-class SQLResult():
-
-    def __init__(self, header : tuple, rows : list[tuple]):
-        self.header : tuple = header
-        self.rows : list[tuple] = rows
