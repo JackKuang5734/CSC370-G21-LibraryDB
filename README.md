@@ -83,9 +83,10 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
 
 4. Run the schema script, then load the Sprint 1 data and the Phase 2 migration:
 ```
-   sudo mysql csc370 < CSC370_PhaseOneLibraryDatabase.sql
-   sudo mysql csc370 < sprint1_100_titles.sql
-   sudo mysql csc370 < phase2_migration.sql
+   sudo mysql csc370 < Sprint0_cr_tables.sql
+   sudo mysql csc370 < Sprint1_ins_data.sql
+   sudo mysql csc370 < Sprint2_upd_tables.sql
+   sudo mysql csc370 < Sprint2_ins_data.sql
 ```
 
 5. Check that it worked. You should see 8 tables (Genre, Item, ItemGenre, ItemType, Location, User, Loan, Hold):
