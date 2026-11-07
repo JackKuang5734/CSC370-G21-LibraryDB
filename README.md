@@ -18,7 +18,7 @@ The database is designed to support the following requirements:
 
 ### ERD
 
-<img width="1943" height="1483" alt="image" src="https://github.com/user-attachments/assets/88245b70-c5b0-4159-a050-ab18792ab8fe" />
+<img width="928" height="662" alt="ERD" src="https://github.com/user-attachments/assets/d9b489ef-02b6-489d-a0a6-c0e02648c79c" />
 
 ### Entities
 
