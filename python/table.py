@@ -1,3 +1,4 @@
+from ctypes import alignment
 from PyQt6 import QtCore, QtWidgets, QtGui
 from PyQt6.QtWidgets import QGridLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
@@ -8,7 +9,6 @@ class ClickableLabel(QLabel):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
     
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
@@ -19,19 +19,22 @@ class Table(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.setLayout(QVBoxLayout())
+        
+        self.grid : QGridLayout = QGridLayout()
         self.data_widget = QWidget()
-        self.data_widget.setLayout(QGridLayout())
+        self.data_widget.setLayout(self.grid)
 
         self.scroll_area : QScrollArea = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.data_widget)
-
-        self.setLayout(QVBoxLayout())
+        
         self.layout().addWidget(self.scroll_area)
+        self.layout().addStretch()
 
     def clear(self):
-        for i in reversed(range(self.data_widget.layout().count())):
-            self.data_widget.layout().itemAt(i).widget().deleteLater()
+        for i in reversed(range(self.grid.count())):
+            self.grid.itemAt(i).widget().deleteLater()
 
     def display(self, sql_result : SQLResult):
         self.clear()
@@ -39,7 +42,7 @@ class Table(QWidget):
         for i in range(len(sql_result.header)):
             label = QLabel(str(sql_result.header[i]))
             label.setMaximumHeight(16)
-            self.data_widget.layout().addWidget(label, 0, i)
+            self.grid.addWidget(label, 0, i)
         
         for col in range(len(sql_result.header)):
             link_function : function = None if len(sql_result.links) <= col else sql_result.links[col]
@@ -48,8 +51,10 @@ class Table(QWidget):
                 label.setMaximumHeight(16)
                 if link_function is not None and sql_result.id_rows[row][col] is not None:
                     label.clicked.connect(lambda checked=False, func=link_function, val=sql_result.id_rows[row][col]: func(val))
-                self.data_widget.layout().addWidget(label, row + 1, col)
+                    label.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+                self.grid.addWidget(label, row + 1, col)
 
+        # self.setMaximumHeight((16 + 2 * self.grid.verticalSpacing()) * (len(sql_result.rows) + 1))
 
 
     # def display(self, header, rows):

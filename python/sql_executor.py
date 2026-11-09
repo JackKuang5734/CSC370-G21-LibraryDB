@@ -18,7 +18,7 @@ class SQLExecutor():
 
     LOCATION_ITEM_QUERY = """
 SELECT
-    it.item_title,
+    LEFT(it.item_title, 150),
     it.item_author,
     it.item_type,
     CONCAT(SUM(CASE WHEN i.item_status = 'Available' THEN 1 ELSE 0 END), '/', COUNT(*))
@@ -60,6 +60,26 @@ JOIN ItemType it
 ON h.item_type_id = it.item_type_id
 """
 
+    USER_HOLD_QUERY = """
+SELECT
+    u.user_name,
+    it.item_title,
+    l.location_name,
+    h.queue_number,
+    h.hold_status,
+    h.hold_created_date,
+    h.hold_expiry_date
+FROM Hold h
+JOIN User u
+ON h.user_id = u.user_id
+JOIN Location l
+ON h.location_id = l.location_id
+JOIN ItemType it
+ON h.item_type_id = it.item_type_id
+WHERE u.user_id = {user_id}
+ORDER BY h.hold_created_date DESC
+"""
+
     LOAN_QUERY = """
 SELECT
     u.user_name,
@@ -90,6 +110,159 @@ JOIN ItemType it
 ON i.item_type_Id = it.item_type_id
 JOIN Location l
 ON i.location_id = l.location_id
+"""
+
+    MOST_LOANED_ITEMS = """
+SELECT
+    LEFT(it.item_title, 150),
+    it.item_type,
+    loc.location_name,
+    COUNT(*)
+FROM Item i
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+JOIN Location loc
+ON (i.location_id = loc.location_id)
+JOIN Loan l
+ON (i.item_id = l.item_id)
+GROUP BY i.item_id
+HAVING COUNT(*) > 10
+ORDER BY COUNT(*) DESC
+"""
+
+    LEAST_LOANED_ITEMS = """
+SELECT
+    LEFT(it.item_title, 150),
+    it.item_type,
+    loc.location_name,
+    COUNT(*)
+FROM Item i
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+JOIN Location loc
+ON (i.location_id = loc.location_id)
+JOIN Loan l
+ON (i.item_id = l.item_id)
+GROUP BY i.item_id
+HAVING COUNT(*) <= 3
+ORDER BY COUNT(*) ASC
+"""
+
+    MOST_HELD_ITEMS = """
+SELECT
+    LEFT(it.item_title, 150),
+    it.item_type,
+    COUNT(*)
+FROM ItemType it
+JOIN Hold h
+ON (it.item_type_id = h.item_type_id)
+GROUP BY it.item_type_id
+HAVING COUNT(*) > 10
+ORDER BY COUNT(*) DESC
+"""
+
+    LEAST_HELD_ITEMS = """
+SELECT
+    LEFT(it.item_title, 150),
+    it.item_type,
+    COUNT(*)
+FROM ItemType it
+JOIN Hold h
+ON (it.item_type_id = h.item_type_id)
+GROUP BY it.item_type_id
+HAVING COUNT(*) <= 3
+ORDER BY COUNT(*) ASC
+"""
+
+    POPULAR_GENRES = """
+SELECT 
+    g.genre_name,
+    COUNT(*)
+FROM Genre g
+JOIN ItemGenre ig
+ON (g.genre_id = ig.genre_id)
+GROUP BY g.genre_id
+HAVING COUNT(*) > 1
+ORDER BY COUNT(*) DESC
+"""
+
+
+    ITEM_HOLD_HISTORY = """
+SELECT
+    u.user_name,
+    LEFT(it.item_title, 150),
+    l.location_name,
+    h.hold_created_date,
+    h.hold_status
+FROM Hold h
+JOIN ItemType it
+ON (h.item_type_id = it.item_type_id)
+JOIN User u 
+ON (h.user_id = u.user_id)
+JOIN Location l
+ON (h.location_id = l.location_id)
+WHERE h.item_type_id = {item_type_id}
+ORDER BY h.hold_created_date DESC
+"""
+
+    ITEM_LOAN_HISTORY = """
+SELECT
+    u.user_name,
+    LEFT(it.item_title, 150),
+    loc.location_name,
+    l.checkout_date,
+    l.due_date,
+    l.loan_status
+FROM Loan l
+JOIN Item i
+ON (l.item_id = i.item_id)
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+JOIN User u 
+ON (l.user_id = u.user_id)
+JOIN Location loc
+ON (l.location_id = loc.location_id)
+WHERE l.item_id = {item_id}
+ORDER BY l.checkout_date DESC
+"""
+
+    USER_HOLD_HISTORY = """
+SELECT
+    u.user_name,
+    LEFT(it.item_title, 150),
+    l.location_name,
+    h.hold_created_date,
+    h.hold_status
+FROM Hold h
+JOIN ItemType it
+ON (h.item_type_id = it.item_type_id)
+JOIN User u 
+ON (h.user_id = u.user_id)
+JOIN Location l
+ON (h.location_id = l.location_id)
+WHERE u.user_id = {user_id}
+ORDER BY h.hold_created_date DESC
+"""
+
+    USER_LOAN_HISTORY = """
+SELECT
+    u.user_name,
+    LEFT(it.item_title, 150),
+    loc.location_name,
+    l.checkout_date,
+    l.due_date,
+    l.loan_status
+FROM Loan l
+JOIN Item i
+ON (l.item_id = i.item_id)
+JOIN ItemType it
+ON (i.item_type_id = it.item_type_id)
+JOIN User u 
+ON (l.user_id = u.user_id)
+JOIN Location loc
+ON (l.location_id = loc.location_id)
+WHERE u.user_id = {user_id}
+ORDER BY l.checkout_date DESC
 """
 
     def __init__(self):
@@ -148,6 +321,11 @@ ON i.location_id = l.location_id
         rows = self.query(SQLExecutor.HOLD_QUERY)
         return SQLResult(header, rows)
 
+    def get_user_holds(self, user_id) -> SQLResult:
+        header = ("User", "Title", "Location", "#", "Status", "Created", "Expires")
+        rows = self.query(SQLExecutor.USER_HOLD_QUERY.replace("{user_id}", str(user_id)))
+        return SQLResult(header, rows)
+
     def get_loans(self) -> SQLResult:
         header = ("User", "Title", "Location", "Checkout Date", "Due Date", "Status")
         rows = self.query(SQLExecutor.LOAN_QUERY)
@@ -169,6 +347,26 @@ ON i.location_id = l.location_id
         rows = self.query("SELECT item_title, item_author, item_release_date, item_type FROM ItemType")
         return SQLResult(header, rows)
 
+    def get_most_loaned_items(self) -> SQLResult:
+        header = ("Title", "Type", "Location", "Times loaned")
+        rows = self.query(SQLExecutor.MOST_LOANED_ITEMS)
+        return SQLResult(header, rows)
+
+    def get_least_loaned_items(self) -> SQLResult:
+        header = ("Title", "Type", "Location", "Times loaned")
+        rows = self.query(SQLExecutor.LEAST_LOANED_ITEMS)
+        return SQLResult(header, rows)
+
+    def get_most_held_items(self) -> SQLResult:
+        header = ("Title", "Type", "Times held")
+        rows = self.query(SQLExecutor.MOST_HELD_ITEMS)
+        return SQLResult(header, rows)
+
+    def get_least_held_items(self) -> SQLResult:
+        header = ("Title", "Type", "Times held")
+        rows = self.query(SQLExecutor.LEAST_HELD_ITEMS)
+        return SQLResult(header, rows)
+
     def get_locations(self) -> SQLResult:
         header = ("Location", "Address")
         rows = self.query("SELECT location_name, address FROM Location")
@@ -177,6 +375,31 @@ ON i.location_id = l.location_id
     def get_genres(self) -> SQLResult:
         header = ("Genre",)
         rows = self.query("SELECT genre_name FROM Genre")
+        return SQLResult(header, rows)
+
+    def get_popular_genres(self) -> SQLResult:
+        header = ("Genre", "Number of items")
+        rows = self.query(SQLExecutor.POPULAR_GENRES)
+        return SQLResult(header, rows)
+    
+    def get_item_loan_history(self, item_id) -> SQLResult:
+        header = ("User", "Title", "Location", "Checkout", "Return", "Status")
+        rows = self.query(SQLExecutor.ITEM_LOAN_HISTORY.replace("{item_id}", str(item_id)))
+        return SQLResult(header, rows)
+
+    def get_item_hold_history(self, item_type_id) -> SQLResult:
+        header = ("User", "Title", "Location", "Created", "Status")
+        rows = self.query(SQLExecutor.ITEM_HOLD_HISTORY.replace("{item_type_id}", str(item_type_id)))
+        return SQLResult(header, rows)
+
+    def get_user_loan_history(self, user_id) -> SQLResult:
+        header = ("User", "Title", "Location", "Checkout", "Return", "Status")
+        rows = self.query(SQLExecutor.USER_LOAN_HISTORY.replace("{user_id}", str(user_id)))
+        return SQLResult(header, rows)
+
+    def get_user_hold_history(self, user_id) -> SQLResult:
+        header = ("User", "Title", "Location", "Created", "Status")
+        rows = self.query(SQLExecutor.USER_HOLD_HISTORY.replace("{user_id}", str(user_id)))
         return SQLResult(header, rows)
 
 
