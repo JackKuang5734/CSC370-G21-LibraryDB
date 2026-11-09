@@ -90,7 +90,7 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
    sudo mysql csc370 < Sprint2_ins_data_bulk_loan_holds.sql
 ```
 
-5. Check that it worked. You should see 8 tables (Genre, Item, ItemGenre, ItemType, Location, User, Loan, Hold):
+5. Check that it worked. You should see 10 tables (Genre, Item, ItemGenre, ItemType, Location, User, Loan, Hold, ItemCollection, ItemTypeCollection):
 ```
    sudo mysql csc370 -e "SHOW TABLES;"
 ```
