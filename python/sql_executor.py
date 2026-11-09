@@ -266,6 +266,18 @@ ORDER BY l.checkout_date DESC
 """
 
     def __init__(self):
+
+        # If you don't want to used a connection info document, you can uncomment this, replace the strings with the information,
+        # and comment the try except block further down
+        # If you do this, make sure not to commit, so that you don't mess up anyone else
+
+        # self.connection = mysql.connector.connect(
+        #     host="hostname",
+        #     user="username",
+        #     password="password",
+        #     database="database"
+        # )
+
         try:
             with open("python/connection_info.txt", "r") as f:
                 lines = [s.strip() for s in f.readlines()]
