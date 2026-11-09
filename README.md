@@ -87,6 +87,7 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
    sudo mysql csc370 < Sprint1_ins_data.sql
    sudo mysql csc370 < Sprint2_upd_tables.sql
    sudo mysql csc370 < Sprint2_ins_data.sql
+   sudo mysql csc370 < Sprint2_ins_data_bulk_loan_holds.sql
 ```
 
 5. Check that it worked. You should see 8 tables (Genre, Item, ItemGenre, ItemType, Location, User, Loan, Hold):
@@ -94,7 +95,28 @@ These steps are for Ubuntu. Commands that start with `sudo mysql` use your Linux
    sudo mysql csc370 -e "SHOW TABLES;"
 ```
 
-### AI use
+## Interface Setup
+
+This assumes you already have python and pip installed. You'll need PyQt:
+```
+   pip install PyQt6
+```
+and you'll also need mySQL connector:
+```
+   pip install mysql-connector-python
+```
+Finally, you'll also need a document named `connection_info.txt` in the python folder. This contains 4 lines: host name, user name, password, database name. For example, if you are using the localhost and root user with no password, and the database is named csc370, your document will look like:
+```
+localhost
+root
+
+csc370
+```
+Alternatively, you can change the code to use the information directly, by uncommenting the statement in the `__init__` method of the `SQLExecutor` class in the `sql_executor.py` file. 
+
+Finally, from the root folder, run `python python/main.py`.
+
+## AI use
 Claude (Anthropic) was used to help update the README to match the schema script and to draft the setup instructions.
 
 **Sprint 1**
